@@ -550,8 +550,29 @@ const TIPS_TICKER = [
 // ============================================================
 // STORAGE
 // ============================================================
+function exLogKey(name) { return 'ex::' + name.trim().toLowerCase(); }
+function migrateLogsToSharedKeys(state) {
+  const oldKeyPattern = /^\d+-\d+$/;
+  Object.keys(state.logs).forEach(key => {
+    if (!oldKeyPattern.test(key)) return;
+    const [dayId, exIndex] = key.split('-').map(Number);
+    const day = DAYS_DATA.find(d => d.id === dayId);
+    const ex = day && day.exercises[exIndex];
+    if (!ex) { delete state.logs[key]; return; }
+    const logKey = exLogKey(ex.replaced || ex.name);
+    const oldLog = state.logs[key];
+    const newLog = state.logs[logKey];
+    if (!newLog || (oldLog.ts || 0) > (newLog.ts || 0)) {
+      state.logs[logKey] = { ...oldLog, dayId };
+    }
+    delete state.logs[key];
+  });
+}
 function loadState() {
-  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); } catch(e) {}
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { const parsed = JSON.parse(raw); migrateLogsToSharedKeys(parsed); return parsed; }
+  } catch(e) {}
   return { completedDays: [...COMPLETED_INITIAL], logs: {}, checks: {} };
 }
 function saveState(state) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} }
@@ -571,7 +592,7 @@ function getLastWorkedDayId() {
   let lastLogTs = 0, lastLogDay = null;
   Object.keys(state.logs).forEach(key => {
     const log = state.logs[key];
-    if (log && log.ts && log.ts > lastLogTs) { lastLogTs = log.ts; lastLogDay = parseInt(key.split('-')[0]); }
+    if (log && log.ts && log.ts > lastLogTs && log.dayId) { lastLogTs = log.ts; lastLogDay = log.dayId; }
   });
   if (lastLogDay) return lastLogDay;
   return state.completedDays[state.completedDays.length - 1];
@@ -660,12 +681,14 @@ function renderDayDetail() {
 
   const exercisesHtml = day.exercises.map((ex, i) => {
     const key = `${day.id}-${i}`;
-    const log = state.logs[key];
+    const effectiveName = ex.replaced || ex.name;
+    const logKey = exLogKey(effectiveName);
+    const log = state.logs[logKey];
     const currentWeight = log ? log.weight : ex.weight;
     const loggedReps = log ? log.reps : null;
     const isChecked = !!state.checks[key];
-    const howto = getHowto(ex.replaced || ex.name);
-    const icon = getIcon(ex.replaced || ex.name);
+    const howto = getHowto(effectiveName);
+    const icon = getIcon(effectiveName);
 
     let weightChip;
     if (ex.isLevel) {
@@ -702,7 +725,7 @@ function renderDayDetail() {
       <div class="exercise-howto" id="howto-${key}">
         <div class="howto-steps">${stepsHtml}</div>
         <div class="howto-tip"><b>Tip:</b> ${howto.tip}</div>
-        <button class="log-btn" style="margin-top:12px${log?';border-color:var(--acid);color:var(--acid)':''}" onclick="openModal(${day.id}, ${i}, '${(ex.replaced||ex.name).replace(/'/g,"\\'")}', '${day.name}')">${log?'✓ Editar registro':'Registrar peso y reps'}</button>
+        <button class="log-btn" style="margin-top:12px${log?';border-color:var(--acid);color:var(--acid)':''}" onclick="openModal(${day.id}, '${effectiveName.replace(/'/g,"\\'")}', '${day.name}')">${log?'✓ Editar registro':'Registrar peso y reps'}</button>
       </div>
     </div>`;
   }).join('');
@@ -757,12 +780,11 @@ window.markDayDone = function(id) {
 // MODAL: LOG WEIGHT
 // ============================================================
 let modalContext = null;
-window.openModal = function(dayId, exIndex, exName, dayName) {
-  modalContext = { dayId, exIndex };
+window.openModal = function(dayId, exName, dayName) {
+  modalContext = { dayId, logKey: exLogKey(exName) };
   document.getElementById('modalExerciseName').textContent = exName;
   document.getElementById('modalDayName').textContent = dayName;
-  const key = `${dayId}-${exIndex}`;
-  const log = state.logs[key];
+  const log = state.logs[modalContext.logKey];
   document.getElementById('modalWeightInput').value = log ? log.weight : '';
   document.getElementById('modalRepsInput').value = log ? (log.reps || '') : '';
   document.getElementById('modalNoteInput').value = log ? log.note || '' : '';
@@ -777,8 +799,7 @@ window.saveExerciseLog = function() {
   const weight = parseFloat(document.getElementById('modalWeightInput').value);
   const reps = document.getElementById('modalRepsInput').value.trim();
   const note = document.getElementById('modalNoteInput').value.trim();
-  const key = `${modalContext.dayId}-${modalContext.exIndex}`;
-  state.logs[key] = { weight: isNaN(weight) ? null : weight, reps, note, ts: Date.now() };
+  state.logs[modalContext.logKey] = { weight: isNaN(weight) ? null : weight, reps, note, ts: Date.now(), dayId: modalContext.dayId };
   saveState(state);
   closeModal();
   renderDayDetail();
@@ -805,7 +826,7 @@ window.resetDay = function(mode) {
   day.exercises.forEach((ex, i) => {
     const key = `${resetContext}-${i}`;
     delete state.checks[key];
-    if (mode === 'all') delete state.logs[key];
+    if (mode === 'all') delete state.logs[exLogKey(ex.replaced || ex.name)];
   });
   const idx = state.completedDays.indexOf(resetContext);
   if (idx >= 0) state.completedDays.splice(idx, 1);
