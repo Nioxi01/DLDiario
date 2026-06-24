@@ -275,7 +275,6 @@ section:last-child { border-bottom: none; }
 
     <nav class="nav-pills" id="navPills">
       <button class="nav-pill active" data-target="dias">Días de entreno</button>
-      <button class="nav-pill" data-target="fuerza">Evaluación de fuerza</button>
       <button class="nav-pill" data-target="progresion">Reglas de progresión</button>
       <button class="nav-pill" data-target="stats">Estadísticas</button>
       <button class="nav-pill" data-target="tips">Recomendaciones</button>
@@ -300,22 +299,6 @@ section:last-child { border-bottom: none; }
 
     <div class="day-selector" id="daySelector"></div>
     <div id="dayDetailContainer"></div>
-  </div>
-</section>
-
-<!-- FUERZA -->
-<section id="fuerza">
-  <div class="wrap">
-    <div class="sec-head">
-      <div>
-        <span class="sec-eyebrow">Evaluación actual</span>
-        <h2 class="sec-title">Mapa de fortalezas</h2>
-      </div>
-    </div>
-    <div class="strength-grid">
-      <div class="radar-wrap"><svg id="radarChart" width="320" height="320" viewBox="0 0 320 320"></svg></div>
-      <div class="strength-bars" id="strengthBars"></div>
-    </div>
   </div>
 </section>
 
@@ -557,10 +540,6 @@ const DAYS_DATA = [
     ]}
 ];
 
-const STRENGTH_EVAL = [
-  { name: "Piernas", stars: 5 }, { name: "Espalda", stars: 5 }, { name: "Pecho", stars: 4 },
-  { name: "Brazos", stars: 4 }, { name: "Hombros", stars: 4 }
-];
 const COMPLETED_INITIAL = [];
 const TIPS_TICKER = [
   "PRIORIZA LA TÉCNICA SOBRE EL PESO", "EL CARDIO DIARIO NO ES NEGOCIABLE",
@@ -837,36 +816,6 @@ window.resetDay = function(mode) {
 document.getElementById('resetModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'resetModalOverlay') closeResetModal(); });
 
 // ============================================================
-// STRENGTH RADAR + BARS
-// ============================================================
-function renderStrength() {
-  const barsEl = document.getElementById('strengthBars');
-  barsEl.innerHTML = STRENGTH_EVAL.map(s => {
-    const pct = (s.stars / 5) * 100;
-    return `<div class="sbar-row"><span class="sbar-label">${s.name}</span>
-      <div class="sbar-track"><div class="sbar-fill" style="width:0%" data-pct="${pct}"></div></div>
-      <span class="sbar-val">${'★'.repeat(s.stars)}${'☆'.repeat(5-s.stars)}</span></div>`;
-  }).join('');
-  requestAnimationFrame(() => { setTimeout(() => { document.querySelectorAll('.sbar-fill').forEach(el => { el.style.width = el.dataset.pct + '%'; }); }, 100); });
-
-  const svg = document.getElementById('radarChart');
-  const size = 320, center = size/2, maxR = 110, n = STRENGTH_EVAL.length, angleStep = (Math.PI*2)/n;
-  function pointFor(index, value) { const angle = -Math.PI/2 + angleStep*index; const r = (value/5)*maxR; return [center+r*Math.cos(angle), center+r*Math.sin(angle)]; }
-  let svgContent = '';
-  for (let ring=1; ring<=5; ring++) {
-    const pts = [];
-    for (let i=0;i<n;i++){ const angle=-Math.PI/2+angleStep*i; const r=(ring/5)*maxR; pts.push(`${center+r*Math.cos(angle)},${center+r*Math.sin(angle)}`); }
-    svgContent += `<polygon points="${pts.join(' ')}" fill="none" stroke="#2a2a2a" stroke-width="1"/>`;
-  }
-  for (let i=0;i<n;i++){ const [x,y]=pointFor(i,5); svgContent += `<line x1="${center}" y1="${center}" x2="${x}" y2="${y}" stroke="#2a2a2a" stroke-width="1"/>`; }
-  const dataPts = STRENGTH_EVAL.map((s,i)=>pointFor(i,s.stars).join(',')).join(' ');
-  svgContent += `<polygon points="${dataPts}" fill="rgba(212,255,61,0.18)" stroke="#d4ff3d" stroke-width="2"/>`;
-  STRENGTH_EVAL.forEach((s,i)=>{ const [x,y]=pointFor(i,s.stars); svgContent += `<circle cx="${x}" cy="${y}" r="4" fill="#d4ff3d"/>`; });
-  STRENGTH_EVAL.forEach((s,i)=>{ const [x,y]=pointFor(i,5.9); svgContent += `<text x="${x}" y="${y}" font-family="JetBrains Mono" font-size="10" fill="#9a9890" text-anchor="middle" dominant-baseline="middle">${s.name.toUpperCase()}</text>`; });
-  svg.innerHTML = svgContent;
-}
-
-// ============================================================
 // NAV PILLS
 // ============================================================
 document.getElementById('navPills').addEventListener('click', (e) => {
@@ -876,7 +825,7 @@ document.getElementById('navPills').addEventListener('click', (e) => {
   const target = document.getElementById(pill.dataset.target);
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
-const sections = ['dias','fuerza','progresion','stats','tips'].map(id => document.getElementById(id));
+const sections = ['dias','progresion','stats','tips'].map(id => document.getElementById(id));
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -896,7 +845,6 @@ renderTodayCallout();
 renderWeekTrack();
 renderDaySelector();
 renderDayDetail();
-renderStrength();
 </script>
 </body>
 </html>
