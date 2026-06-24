@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2d2680">
+<title>Diego Leiton — Seguimiento Nutricionista</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --purple:#4a43a8;--purple-dark:#2d2680;--purple-bg:#eeedfe;
+  --green:#0a5c44;--green-light:#178a65;--green-bg:#d8f2e8;
+  --red:#c0392b;
+  --bg:#f4f4f0;--card:#f7f7f3;--border:#e8e8e3;--border2:#ebebeb;
+  --text:#1a1a1a;--text2:#555;--text3:#888;--white:#fff;
+}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;}
+.app{max-width:480px;margin:0 auto;background:var(--white);min-height:100vh;}
+.sync-bar{display:flex;align-items:center;font-size:11px;color:var(--text3);padding:6px 16px;background:var(--card);border-bottom:1px solid var(--border);}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+.sync-ok{background:#1D9E75;}.sync-err{background:var(--red);}.sync-loading{background:#e08c1a;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.hdr{padding:20px 16px 18px;color:#fff;background:linear-gradient(135deg,var(--purple-dark) 0%,var(--purple) 60%,#6b64cc 100%);}
+.hdr h1{font-size:19px;font-weight:700;margin-bottom:2px;}
+.hdr p{font-size:12px;opacity:.75;margin-top:2px;}
+.pad{padding:16px;}
+.stitle{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:18px 0 8px;}
+.stitle:first-child{margin-top:4px;}
+.card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;}
+.form-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+input[type="number"],input[type="date"],input[type="text"],textarea{width:100%;padding:12px 13px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;background:var(--white);color:var(--text);-webkit-appearance:none;appearance:none;}
+textarea{resize:vertical;min-height:80px;}
+input:focus,textarea:focus{outline:none;border-color:var(--purple);}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-purple{background:var(--purple);color:#fff;}
+.btn-purple:active{background:var(--purple-dark);}
+.btn-outline-red{background:none;color:var(--red);border:1.5px solid var(--red);margin-top:8px;padding:10px;font-size:13px;}
+.save-msg{text-align:center;font-size:14px;min-height:22px;margin-top:10px;}
+.visit-card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border-left:4px solid var(--purple);}
+.visit-date{font-size:14px;font-weight:700;color:var(--purple-dark);}
+.visit-next{font-size:11px;color:var(--green);font-weight:700;margin-top:2px;}
+.visit-vals{display:flex;gap:14px;margin-top:8px;font-size:13px;color:var(--text2);flex-wrap:wrap;}
+.visit-vals b{color:var(--text);}
+.visit-notes{font-size:13px;color:var(--text2);margin-top:8px;line-height:1.5;white-space:pre-wrap;}
+.visit-del{font-size:11px;color:var(--red);margin-top:8px;cursor:pointer;display:inline-block;}
+.no-data{text-align:center;padding:40px 24px;}
+.no-data-icon{font-size:36px;margin-bottom:12px;}
+.no-data p{font-size:14px;color:var(--text3);line-height:1.6;}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1a1a1a;--card:#2a2a2a;--border:#333;--border2:#333;--text:#f0f0ec;--text2:#bbb;--text3:#888;--white:#222;}
+  input,textarea{background:#2a2a2a;border-color:#444;color:#f0f0ec;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sync-bar"><a href="index.html" style="color:inherit;text-decoration:none;margin-right:10px;font-weight:600">← Inicio</a><span class="sync-dot sync-loading" id="sync-dot"></span><span id="sync-txt">Conectando...</span></div>
+  <div class="hdr"><h1>Seguimiento Nutricionista</h1><p>Registro de visitas, indicaciones y avances</p></div>
+
+  <div class="pad">
+    <div class="stitle">Nueva visita</div>
+    <div class="card">
+      <div class="form-group"><label class="form-label">Fecha de la visita</label><input type="date" id="v-fecha"></div>
+      <div class="form-row2">
+        <div class="form-group"><label class="form-label">Peso (kg)</label><input type="number" id="v-peso" placeholder="ej: 108.5" step="0.1" inputmode="decimal"></div>
+        <div class="form-group"><label class="form-label">% Grasa</label><input type="number" id="v-grasa" placeholder="ej: 35.2" step="0.1" inputmode="decimal"></div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group"><label class="form-label">% Músculo</label><input type="number" id="v-musculo" placeholder="ej: 40.1" step="0.1" inputmode="decimal"></div>
+        <div class="form-group"><label class="form-label">Cintura (cm)</label><input type="number" id="v-cintura" placeholder="ej: 109.7" step="0.1" inputmode="decimal"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notas / indicaciones</label><textarea id="v-notas" placeholder="Cambios al plan, observaciones de la nutricionista..."></textarea></div>
+      <div class="form-group"><label class="form-label">Próxima cita programada</label><input type="date" id="v-proxima"></div>
+      <button class="btn btn-purple" onclick="guardarVisita()">Guardar visita</button>
+      <div class="save-msg" id="save-msg"></div>
+    </div>
+
+    <div class="stitle">Historial de visitas</div>
+    <div id="historial"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDocs, deleteDoc, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBFY1ywg0xQuV8ySA5zwJqOPfsxToLuTFw",
+  authDomain: "diego-plan-alimentario.firebaseapp.com",
+  projectId: "diego-plan-alimentario",
+  storageBucket: "diego-plan-alimentario.firebasestorage.app",
+  messagingSenderId: "11529034965",
+  appId: "1:11529034965:web:3efbe7363e2275c7f6565c"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const COL = 'diego_nutri_visitas';
+
+function setSyncStatus(s,msg){ document.getElementById('sync-dot').className='sync-dot sync-'+s; document.getElementById('sync-txt').textContent=msg; }
+function showMsg(msg,color){ const el=document.getElementById('save-msg'); el.style.color=color; el.textContent=msg; setTimeout(()=>el.textContent='',3000); }
+function fmtDate(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+
+async function loadVisitas(){
+  try{
+    const snap = await getDocs(collection(db, COL));
+    return snap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||''));
+  }catch(e){ return []; }
+}
+
+function renderHistorial(visitas){
+  const el = document.getElementById('historial');
+  if(visitas.length===0){
+    el.innerHTML = `<div class="no-data"><div class="no-data-icon">🩺</div><p>Aún no registras visitas a la nutricionista.<br>Completa el formulario de arriba para empezar.</p></div>`;
+    return;
+  }
+  el.innerHTML = visitas.map(v=>{
+    const vals=[];
+    if(v.peso) vals.push(`Peso <b>${v.peso} kg</b>`);
+    if(v.grasa) vals.push(`Grasa <b>${v.grasa}%</b>`);
+    if(v.musculo) vals.push(`Músculo <b>${v.musculo}%</b>`);
+    if(v.cintura) vals.push(`Cintura <b>${v.cintura} cm</b>`);
+    return `<div class="visit-card">
+      <div class="visit-date">${fmtDate(v.fecha)}</div>
+      ${v.proxima?`<div class="visit-next">Próxima cita: ${fmtDate(v.proxima)}</div>`:''}
+      ${vals.length?`<div class="visit-vals">${vals.map(x=>`<span>${x}</span>`).join('')}</div>`:''}
+      ${v.notas?`<div class="visit-notes">${v.notas}</div>`:''}
+      <span class="visit-del" onclick="eliminarVisita('${v.id}')">Eliminar registro</span>
+    </div>`;
+  }).join('');
+}
+
+async function refrescar(){
+  const visitas = await loadVisitas();
+  renderHistorial(visitas);
+}
+
+window.guardarVisita = async function(){
+  const fecha = document.getElementById('v-fecha').value;
+  if(!fecha){ showMsg('Falta la fecha de la visita','#c0392b'); return; }
+  const data = {
+    fecha,
+    peso: parseFloat(document.getElementById('v-peso').value) || null,
+    grasa: parseFloat(document.getElementById('v-grasa').value) || null,
+    musculo: parseFloat(document.getElementById('v-musculo').value) || null,
+    cintura: parseFloat(document.getElementById('v-cintura').value) || null,
+    notas: document.getElementById('v-notas').value.trim(),
+    proxima: document.getElementById('v-proxima').value || null,
+    ts: Date.now()
+  };
+  try{
+    setSyncStatus('loading','Guardando...');
+    await setDoc(doc(db, COL, String(data.ts)), data);
+    setSyncStatus('ok','Sincronizado ✓');
+    showMsg('Visita guardada ✓','#0a5c44');
+    ['v-fecha','v-peso','v-grasa','v-musculo','v-cintura','v-notas','v-proxima'].forEach(id=>document.getElementById(id).value='');
+    refrescar();
+  }catch(e){
+    setSyncStatus('err','Sin conexión — no se pudo guardar');
+    showMsg('No se pudo guardar, revisa tu conexión','#c0392b');
+  }
+};
+
+window.eliminarVisita = async function(id){
+  try{ await deleteDoc(doc(db, COL, id)); refrescar(); }catch(e){}
+};
+
+async function init(){
+  try{ setSyncStatus('loading','Conectando...'); await refrescar(); setSyncStatus('ok','Sincronizado ☁️'); }
+  catch(e){ setSyncStatus('err','Sin conexión — modo local'); }
+}
+init();
+</script>
+</body>
+</html>

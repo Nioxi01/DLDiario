@@ -1,8 +1,9 @@
-const CACHE_NAME = 'diego-leiton-v1';
+const CACHE_NAME = 'diego-leiton-v2';
 const ASSETS = [
   './index.html',
   './nutricion.html',
   './entrenamiento.html',
+  './seguimiento.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

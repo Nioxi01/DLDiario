@@ -187,7 +187,7 @@ input:focus,select:focus{outline:none;border-color:var(--green);}
 </head>
 <body>
 <div class="app">
-  <div class="sync-bar" id="sync-bar"><span class="sync-dot sync-loading" id="sync-dot"></span><span id="sync-txt">Conectando...</span></div>
+  <div class="sync-bar" id="sync-bar"><a href="index.html" style="color:inherit;text-decoration:none;margin-right:10px;font-weight:600">← Inicio</a><span class="sync-dot sync-loading" id="sync-dot"></span><span id="sync-txt">Conectando...</span></div>
   <nav class="nav">
     <button class="active" onclick="showTab('hoy',this)">Hoy</button>
     <button onclick="showTab('plan',this)">Plan v2</button>
@@ -829,6 +829,8 @@ async function init(){
   catch(e){ setSyncStatus('err','Sin conexión — modo local'); }
   initHoy();
   document.getElementById('inp-fecha').value=todayKey();
+  const deepLinkTab=new URLSearchParams(location.search).get('tab');
+  if(deepLinkTab){ const btn=document.querySelector(`.nav button[onclick*="'${deepLinkTab}'"]`); if(btn) showTab(deepLinkTab,btn); }
 }
 init();
 </script>
